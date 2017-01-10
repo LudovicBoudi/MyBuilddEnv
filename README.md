@@ -1,0 +1,2 @@
+# MyBuilddEnv
+My rpmbuild environnement
