@@ -1,0 +1,64 @@
+
+# Utility functions to be used in %post, %pre... sections
+#Replace part of a file
+#The file is given with a -f option
+#IMPORTANT NOTICE : when defining %*, bear in mind that the expression will be parsed and extra spaces wil be stripped!
+%replace_in_file(f:) sed -e %* < %{-f*} > %{-f*}.tmp ; cp -f %{-f*}.tmp %{-f*} ; rm %{-f*}.tmp \
+%nil
+
+%replace_in_template(f:) sed -e %* < %{-f*}.in > %{-f*} \
+%nil
+
+#Create a copy of file $1 as $1.bak but does not overwrite $1.bak if it already exists.
+#This allows a package to be reinstalled without overwriting original backup.
+%backup_file() if [ -h %1 ]; then \
+  if [ ! -e %1.bak ]; then cp -dp %1 %1.bak; fi \
+else \
+  if [ ! -e  %1.bak ]; then cp -p %1 %1.bak; fi \
+fi \
+%nil
+
+%create_symlink() rm -f %2 ; ln -s %1 %2 \
+%nil
+
+%restore_file() rm %1 ; cp -dpf %1.bak %1 \
+%nil
+
+#Utility functions to be used in %install sections
+# %1 : file or directory to copy
+# %2 : destination directory (HAS to be an existing directory)
+%copy_to_build_root() \
+mkdir -p ${RPM_BUILD_ROOT}%2 ; cp -rf %1 ${RPM_BUILD_ROOT}%2/ \
+%nil
+
+# %1 : directory to copy (HAS to be an existing directory)
+# %2 : destination directory (HAS to be an existing directory)
+%tar_copy_to_build_root() \
+tar cC %1 --exclude "*.contrib*" --exclude "*.keep*" --exclude VERSION . | tar xC ${RPM_BUILD_ROOT}%2 \
+%nil
+
+# %1 : directory to copy (HAS to be an existing directory)
+# %2 : destination directory (HAS to be an existing directory)
+%tar_dir_copy_to_build_root() \
+tar cC $(dirname %1) --exclude "*.contrib*" --exclude "*.keep*" --exclude VERSION $(basename %1) | tar xC ${RPM_BUILD_ROOT}%2 \
+%nil
+
+%rename_in_build_root() \
+mv ${RPM_BUILD_ROOT}%1 ${RPM_BUILD_ROOT}%2 \
+%nil
+
+%mkdir_in_build_root() \
+mkdir -p ${RPM_BUILD_ROOT}%1 \
+%nil
+
+%rm_in_build_root() \
+rm -rf ${RPM_BUILD_ROOT}%1 \
+%nil
+
+%get_version_from_plain_file() %(cat %1)
+%get_version_from_source_file() %(grep Version_Name %1 | awk 'BEGIN {FS=":="} {match($2, "\\"(.*)\\"", a) ; split(a[1], b , "v") ; gsub(" ", "", b[2]); print b[2]}')
+%get_dif_version_from_source_file() %(grep version %1 | awk 'BEGIN {FS="="} {match($2, "\\"(.*)\\"", a) ; split(a[1], b , " "); print b[7]}')
+
+%to_upper() %(echo %1 | tr '[:lower:]' '[:upper:]')
+%to_lower() %(echo %1 | tr '[:upper:]' '[:lower:]')
+%sum() %(echo $((%1 + %2)))
