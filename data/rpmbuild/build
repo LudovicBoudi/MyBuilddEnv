@@ -1,0 +1,27 @@
+#!/usr/bin/php
+<?php
+//***************************************************************************
+//		Autor		: BOUDI Ludovic
+//		Date		: 09-05-2017
+//		Version		: 1.0.0
+//		Description	: Ce script permet de Build les RPM + DOC
+//***************************************************************************
+$output;
+$specfile;
+function usage()
+{
+	echo "Command Syntax : \n";
+	echo "build <SPEC File> \n";
+}
+if ($argc != 2)
+{
+	usage();
+	exit(1);
+}
+$specfile = $argv[1];
+$output = shell_exec("./DocGenerator $specfile");
+echo $output;
+$output = shell_exec("./launch $specfile");
+echo $output;
+exit(0);
+?>

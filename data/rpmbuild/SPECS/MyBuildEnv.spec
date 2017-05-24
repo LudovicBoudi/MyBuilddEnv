@@ -10,6 +10,7 @@ Version: %{version}
 Release: 20170109
 License: BOUDI Ludovic
 Source: %{sources}/%{name}_resource-%{version}.tgz
+ExclusiveArch: noarch
 %description
 This package only deploy my personal rpm build environnement
 %prep

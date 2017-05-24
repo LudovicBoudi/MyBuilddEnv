@@ -1,0 +1,145 @@
+#!/usr/bin/php
+<?php
+//***************************************************************************
+//		Autor		: BOUDI Ludovic
+//		Date		: 24-05-2017
+//		Version		: 1.0.1
+//		Description	: Ce script permet de generer des fiches
+//				  de versions associes aux SPEC des RPM
+//***************************************************************************
+
+
+// variables definition
+$RpmName;
+$SourceVersion;
+$SpecVersion;
+$Licence;
+$Description;
+$Dependancies;
+$Conflicts;
+$Obsoletes;
+$Provides;
+$Architecture;
+$Tree;
+$Changelogs;
+$SpecFile;
+$Output;
+$Garbage;
+$Pointeur;
+$Content;
+$VersionFilesPath = "/data/rpmbuild/RPMVersionFiles/";
+$VersionFiles;
+$Scripts;
+
+// functions definition
+
+function StringSeeckAndReplace($Search, $Replace, $String)
+{
+    $contenu = str_replace($Search, $Replace, $String);
+    return $contenu;
+}
+
+function usage()
+{
+	echo "Command Syntax : \n";
+	echo "DocGenerator <SPEC File> \n";
+}
+
+// main script
+// arguments check
+if ($argc != 2)
+{
+	usage();
+	exit(1);
+}
+$SpecFile = $argv[1];
+$Output = shell_exec("cat $SpecFile" . ' | grep "define name"');
+$RpmName = StringSeeckAndReplace('%define name', "\n * **Nom du RPM :**", $Output);
+$VersionFiles = $VersionFilesPath . trim(StringSeeckAndReplace('%define name', ' ', $Output)) . ".md";
+shell_exec("rm -f $VersionFiles");
+shell_exec("touch $VersionFiles");
+$Output = shell_exec("cat $SpecFile" . ' | grep "define version"');
+$SourceVersion = StringSeeckAndReplace('%define version', "\n * **Version des sources :**", $Output);
+$Output = shell_exec("cat $SpecFile" . ' | grep "Release:"');
+$SpecVersion = StringSeeckAndReplace('Release:', "\n * **Version du SpecFile :**", $Output);
+$Output = shell_exec("cat $SpecFile" . ' | grep "License:"');
+$Licence = StringSeeckAndReplace('License:', "\n * **Licence du RPM :**", $Output);
+$Output = shell_exec("cat $SpecFile" . ' | grep "ExclusiveArch:"');
+$Architecture = StringSeeckAndReplace('ExclusiveArch:', "\n * **Architecture cible :**", $Output);
+$Output = shell_exec("cat $SpecFile" . ' | grep "Requires:"');
+if (empty($Output))
+{
+	$Dependancies = "<g><u>Ce package a les dépendances suivantes : </g></u> \n - aucune dépendance declaré";
+} 
+else
+{
+	$Output = StringSeeckAndReplace(' ', "\n * ", $Output);
+	$Dependancies = StringSeeckAndReplace('Requires:', "<g><u>Ce package a les dépendances suivantes : </g></u> \n", $Output);
+}
+$Output = shell_exec("cat $SpecFile" . ' | grep "Conflicts:"');
+if (empty($Output))
+{
+	$Conflicts = "<g><u>Imcompatible avec les packages suivants : </g></u> \n - aucun package conflictuel declaré";
+} 
+else
+{
+	$Output = StringSeeckAndReplace(' ', "\n * ", $Output);
+	$Conflicts = StringSeeckAndReplace('Conflicts:', "<g><u>Imcompatible avec les packages suivants : </g></u> \n", $Output);
+}
+$Output = shell_exec("cat $SpecFile" .' | grep "Provides:"');
+if (empty($Output))
+{
+	$Provides = "<g><u>Liste des packages fournis : </g></u> \n - aucun package fourni";
+} 
+else
+{
+	$Output = StringSeeckAndReplace(' ', "\n * ", $Output);
+	$Provides = StringSeeckAndReplace('Provides:', "<g><u>Liste des packages fournis : </g></u> \n", $Output);
+}
+$Output = shell_exec("cat $SpecFile" . ' | grep "Obsoletes:"');
+if (empty($Output))
+{
+	$Obsoletes = "<g><u>Liste des packages rendus obsolète : </g></u> \n - aucun package rendu obsolète";
+} 
+else
+{
+	$Output = StringSeeckAndReplace(' ', "\n * ", $Output);
+	$Obsoletes = StringSeeckAndReplace('Obsoletes:', "<g><u>Liste des packages rendus obsolète : </g></u> \n", $Output);
+}
+$Output = shell_exec("cat $SpecFile" . ' | grep "%attr"');
+$Output = StringSeeckAndReplace('%attr', "* **Droits & propriétaire :** ", $Output);
+$Tree = StringSeeckAndReplace('%dir', '_- **Répertoire** -_', $Output);
+$Output = file_get_contents($SpecFile);
+list($Garbage, $Output) = explode("%description", $Output);
+list($Description, $Garbage) = explode("%prep", $Output);
+list($Garbage, $Changelogs) = explode("%changelog", $Garbage);
+$Changelogs = StringSeeckAndReplace("\n-", "\n \t * ", $Changelogs);
+$Scripts = shell_exec("rpm -q --specfile --scripts $SpecFile");
+$Content = "# Fiche de version du Package :" . StringSeeckAndReplace("\n * **Nom du RPM :**", ' ', $RpmName) . "\n";
+$Content .= "<p>Cette documentation a été générée automatiquement à partir du fichier de Spec du RPM.</p> \n";
+$Content .= "# Informations de base sur le package : \n";
+$Content .= $RpmName ;
+$Content .= $SourceVersion ;
+$Content .= $SpecVersion ;
+$Content .= $Licence ;
+$Content .= $Architecture . "\n";
+$Content .= "# Description du package et de ces fonctionnalités: \n";
+$Content .= $Description . "\n \n";
+$Content .= "# Dépendances du package : \n";
+$Content .= $Dependancies . "\n \n";
+$Content .= $Conflicts . "\n \n";
+$Content .= $Provides . "\n \n";
+$Content .= $Obsoletes . "\n \n";
+$Content .= "# Description de l'arborescence déployée : \n";
+$Content .= $Tree . "\n";
+$Content .= "Commandes exécutées dans les sections de script :\n ";
+$Content .= "```bash \n";
+$Content .= $Scripts;
+$Content .= "``` \n \n";
+$Content .= "# Historique des évolutions du package: \n";
+$Content .= $Changelogs;
+$Pointeur = fopen($VersionFiles, "r+");
+fputs($Pointeur, $Content);
+fclose($Pointeur);
+exit(0);
+?>

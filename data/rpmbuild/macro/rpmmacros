@@ -62,3 +62,50 @@ rm -rf ${RPM_BUILD_ROOT}%1 \
 %to_upper() %(echo %1 | tr '[:lower:]' '[:upper:]')
 %to_lower() %(echo %1 | tr '[:upper:]' '[:lower:]')
 %sum() %(echo $((%1 + %2)))
+
+
+# create a group
+%create_group()\
+getent group %1 >/dev/null || groupadd %1 \
+%nil
+
+# create a system user
+# %1 => description of the user
+# %2 => default home directory of the user
+# %3 => name of the user
+%create_system_user() \
+getent passwd %3 >/dev/null || useradd -r -c %1 -d %2 -s /sbin/nologin %3 \
+%nil
+
+# create a simple user
+# %1 => description of the user
+# %2 => default home directory of the user
+# %3 => name of the user
+%create_user() \
+getent passwd %3 >/dev/null || useradd -c %1 -d %2 %3 \
+%nil
+
+# create a system user associated with a specified group
+# %1 => description of the user
+# %2 => default home directory of the user
+# %3 => associated group
+# %4 => name of the user
+%create_system_user_ingroup() \
+getent passwd %4 >/dev/null || useradd -r -c %1  -G %3 -d %2 -s /sbin/nologin %4 \
+%nil
+
+# create a simple user associated with a specified group
+# %1 => description of the user
+# %2 => default home directory of the user
+# %3 => associated group
+# %4 => name of the user
+%create_user_ingroup() \
+getent passwd %4 >/dev/null || useradd -c %1 -G %3 -d %2 %4 \
+%nil
+
+
+
+
+
+
+

@@ -14,8 +14,6 @@ resourcever=$(cat resources/${package}/VERSION)
   if [ -z "$resourcever" ]; then
     resourcever=0
   fi
+rpmbuild -vv -bb --target $TARGET --define "resourcever $resourcever" --define "_topdir /data/rpmbuild" --macros=/usr/lib/rpm/macros:/data/rpmbuild/macro/rpmmacros $1 
 
-  
-  #rpmbuild -vv -bb --target $TARGET --clean --define "resourcever $resourcever" $1
-  rpmbuild -vv -bb --target noarch --define "resourcever $resourcever" --define "_topdir /data/rpmbuild" --macros=/usr/lib/rpm/macros:/data/rpmbuild/macro/rpmmacros $1 
 
